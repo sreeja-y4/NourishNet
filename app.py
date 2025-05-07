@@ -14,7 +14,7 @@ st.title("NourishNet: UMD Pantry Inventory - Image Upload")
 # -------------------- Load Model --------------------
 
 # Make sure 'models/best.pt' exists in your repo
-model = YOLO("models/best(1).pt")
+model = YOLO("models/best.pt")
 
 # -------------------- Connect to Google Sheets --------------------
 
