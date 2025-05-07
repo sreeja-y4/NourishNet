@@ -20,7 +20,14 @@ model = YOLO("models/best.pt")
 
 # Using secrets stored securely in Streamlit Cloud
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["google_sheets"], scope)
+import os
+
+# Load credentials differently for local testing
+if os.path.exists("credentials/nourishnet-creds.json"):
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials/nourishnet-creds.json", scope)
+else:
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["google_sheets"], scope)
+
 client = gspread.authorize(creds)
 sheet = client.open("NourishNet Confirmations").sheet1  # Must match your Sheet name
 
