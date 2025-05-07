@@ -1,0 +1,16 @@
+# Ignore model files (you can upload manually via GitHub)
+models/*.pt
+
+# Ignore Python cache and temp files
+__pycache__/
+*.pyc
+
+# Ignore Streamlit secrets (don't ever commit these!)
+*.json
+
+# Ignore Jupyter autosave folders
+.ipynb_checkpoints/
+
+# Ignore virtual environments
+venv/
+.env
