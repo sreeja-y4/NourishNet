@@ -5,73 +5,64 @@ from ultralytics import YOLO
 from collections import Counter
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
-
-# -------------------- Streamlit App Setup --------------------
-
-st.set_page_config(page_title="NourishNet - UMD Pantry", layout="centered")
-st.title("NourishNet: UMD Pantry Inventory - Image Upload")
-
-# -------------------- Load Model --------------------
-
-# Make sure 'models/best.pt' exists in your repo
-model = YOLO("models/best.pt")
-
-# -------------------- Connect to Google Sheets --------------------
-
-# Using secrets stored securely in Streamlit Cloud
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 import os
 
-# Load credentials differently for local testing
-if os.path.exists("credentials/nourishnet-creds.json"):
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials/nourishnet-creds.json", scope)
-else:
+st.set_page_config(page_title="NourishNet - UMD Pantry Inventory Detector", layout="centered")
+st.title("NourishNet - UMD Pantry Inventory Detector")
+
+# Load YOLOv8 model
+model = YOLO("models/best.pt")
+
+# Set up credentials for Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+if "google_sheets" in st.secrets:
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["google_sheets"], scope)
+else:
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials/nourishnet-creds.json", scope)
 
 client = gspread.authorize(creds)
-sheet = client.open("NourishNet Confirmations").sheet1  # Must match your Sheet name
+sheet = client.open("NourishNet Confirmations").sheet1
 
-# -------------------- Optional Dietary Tags --------------------
+# Dietary logic
+def infer_tags(item_name):
+    name = item_name.lower()
+    tags = []
 
-dietary_tags = {
-    "Canned Beans": ["vegan", "gluten-free"],
-    "Milk": ["vegetarian"],
-    "Bread": ["vegetarian"],
-    "Chicken Breast": ["halal"],
-    "Tofu": ["vegan"],
-    # Add more as needed
-}
+    if not any(word in name for word in ["chicken", "beef", "pork", "meat", "fish"]):
+        tags.append("vegetarian")
 
-# -------------------- Image Upload Interface --------------------
+        if not any(word in name for word in ["milk", "cheese", "yogurt", "egg"]):
+            tags.append("vegan")
 
-uploaded_file = st.file_uploader("📤 Upload a pantry image", type=["jpg", "jpeg", "png"])
+    if not any(word in name for word in ["bread", "pasta", "wheat", "bun", "carbohydrate meal"]): 
+        tags.append("gluten-free")
+
+    return ", ".join(tags) if tags else "unclassified"
+
+# UI
+uploaded_file = st.file_uploader("Please upload an image of the pantry or fridge", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # -------------------- Run YOLOv8 Detection --------------------
-    with st.spinner("🔍 Detecting items..."):
-        results = model.predict(image)
-        result_image = results[0].plot()
-        detected_classes = [model.names[int(cls)] for cls in results[0].boxes.cls]
-        counts = Counter(detected_classes)
+    results = model.predict(image)
+    result_image = results[0].plot()
+    detected_classes = [model.names[int(cls)] for cls in results[0].boxes.cls]
+    counts = Counter(detected_classes)
 
     if counts:
-        st.subheader("✅ Detected Items")
+        st.subheader("Detected Items & Dietary Tags")
         for item, count in counts.items():
-            st.write(f"- {item}: {count}")
+            tags = infer_tags(item)
+            st.write(f"- {item}: {count} → Tags: `{tags}`")
 
-        st.image(result_image, caption="Detected Items", use_column_width=True)
-
-        if st.button("📝 Confirm & Save to Pantry Log"):
+        if st.button("Confirm & Save to Pantry Log"):
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             for item, count in counts.items():
-                tags = ", ".join(dietary_tags.get(item, []))  # Match optional tags
+                tags = infer_tags(item)
                 sheet.append_row([timestamp, "UMD Campus Pantry", item, count, tags])
-            st.success("✔️ Items saved to NourishNet Sheet!")
+            st.success("All items saved with dietary tags!")
     else:
-        st.warning("⚠️ No items detected. Try a clearer image.")
-else:
-    st.info("👈 Upload an image to begin.")
-
+        st.warning("No items detected. Try a clearer image.")

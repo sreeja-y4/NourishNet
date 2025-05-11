@@ -15,4 +15,5 @@ __pycache__/
 venv/
 .env
 
-.streamlit/secrets.toml
+credentials/nourshitnet-creds.json
+.streamlit/
