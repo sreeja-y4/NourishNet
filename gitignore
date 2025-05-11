@@ -17,3 +17,5 @@ venv/
 
 credentials/nourshitnet-creds.json
 .streamlit/
+
+credentials/
