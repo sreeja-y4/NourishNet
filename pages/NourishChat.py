@@ -18,6 +18,8 @@ sheet = client.open("NourishNet Confirmations").sheet1
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 
+st.write("Sheet columns:", df.columns.tolist())
+
 today = datetime.now().strftime("%Y-%m-%d")
 df_today = df[df["timestamp"].str.startswith(today)]
 
