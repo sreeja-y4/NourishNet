@@ -1,0 +1,39 @@
+import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+
+st.set_page_config(page_title="NourishChat", layout="centered")
+st.title("💬 NourishChat - Pantry Items by Dietary Needs")
+
+# Connect to Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+if "google_sheets" in st.secrets:
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["google_sheets"], scope)
+else:
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials/nourishnet-creds.json", scope)
+
+client = gspread.authorize(creds)
+sheet = client.open("NourishNet Confirmations").sheet1
+data = sheet.get_all_records()
+df = pd.DataFrame(data)
+
+# User input
+st.markdown("#### What are your dietary needs?")
+preference = st.selectbox("Select one:", ["vegan", "vegetarian", "gluten-free"])
+
+# Filter today's items by tag
+if "timestamp" in df.columns:
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    today = pd.Timestamp.now().normalize()
+    df_today = df[df["timestamp"].dt.normalize() == today]
+else:
+    df_today = df.copy()
+
+matches = df_today[df_today["dietary tags"].str.contains(preference, case=False, na=False)]
+
+if not matches.empty:
+    st.success(f"Available pantry items for `{preference}` today:")
+    st.table(matches.groupby("item")["quantity"].sum().reset_index())
+else:
+    st.warning(f"No items found for `{preference}` today. Try again later.")
