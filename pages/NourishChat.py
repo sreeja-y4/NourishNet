@@ -31,6 +31,6 @@ filtered = df_today[df_today["dietary tags"].str.contains(option, case=False)]
 if not filtered.empty:
     st.success(f"Items available today for a **{option}** diet:")
     for _, row in filtered.iterrows():
-        st.write(f"- {row['item category']} (x{row['quantity']})")
+        st.write(f"- {row['item']} (x{row['quantity']})")
 else:
     st.warning(f"No items found today with the tag '{option}'.")
