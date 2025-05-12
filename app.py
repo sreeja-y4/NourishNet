@@ -43,7 +43,7 @@ def infer_tags(item_name):
     return ", ".join(tags) if tags else "unclassified"
 
 # UI
-uploaded_file = st.file_uploader("Please upload an image of the pantry or fridge", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Please upload an image of a pantry or fridge", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
