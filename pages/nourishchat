@@ -3,11 +3,11 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 
-st.set_page_config(page_title="NourishChat", layout="centered")
-st.title("💬 NourishChat - Pantry Items by Dietary Needs")
+st.title("NourishChat: Personalized Pantry Recommendations")
 
-# Connect to Google Sheets
+# Set up credentials for Google Sheets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
 if "google_sheets" in st.secrets:
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["google_sheets"], scope)
 else:
@@ -15,25 +15,25 @@ else:
 
 client = gspread.authorize(creds)
 sheet = client.open("NourishNet Confirmations").sheet1
+
+# Fetch data from Google Sheet
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 
-# User input
-st.markdown("#### What are your dietary needs?")
-preference = st.selectbox("Select one:", ["vegan", "vegetarian", "gluten-free"])
+# User input for dietary preferences
+st.sidebar.header("Filter by Dietary Needs")
+vegetarian = st.sidebar.checkbox("Vegetarian")
+vegan = st.sidebar.checkbox("Vegan")
+gluten_free = st.sidebar.checkbox("Gluten-Free")
 
-# Filter today's items by tag
-if "timestamp" in df.columns:
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    today = pd.Timestamp.now().normalize()
-    df_today = df[df["timestamp"].dt.normalize() == today]
-else:
-    df_today = df.copy()
+# Filter logic
+filtered_df = df.copy()
+if vegetarian:
+    filtered_df = filtered_df[filtered_df['Tags'].str.contains("vegetarian", case=False)]
+if vegan:
+    filtered_df = filtered_df[filtered_df['Tags'].str.contains("vegan", case=False)]
+if gluten_free:
+    filtered_df = filtered_df[filtered_df['Tags'].str.contains("gluten-free", case=False)]
 
-matches = df_today[df_today["dietary tags"].str.contains(preference, case=False, na=False)]
-
-if not matches.empty:
-    st.success(f"Available pantry items for `{preference}` today:")
-    st.table(matches.groupby("item")["quantity"].sum().reset_index())
-else:
-    st.warning(f"No items found for `{preference}` today. Try again later.")
+st.subheader("Available Items Matching Your Preferences")
+st.dataframe(filtered_df[['Item', 'Count', 'Tags']])
