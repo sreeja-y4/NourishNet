@@ -1,4 +1,4 @@
-# rebuild trigger
+# rebuild stream
 
 import streamlit as st
 from PIL import Image
