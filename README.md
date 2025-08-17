@@ -2,5 +2,5 @@
 
 https://nourish.streamlit.app/
 
-[View the Slide Deck](NourishNet-Better-Access-to-UMDs-Campus-Food-Pantry.pdf)
+[Product Requirement Document](NourishNet-Better-Access-to-UMDs-Campus-Food-Pantry.pdf)
 
